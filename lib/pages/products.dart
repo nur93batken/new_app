@@ -64,7 +64,8 @@ class _ProductScreen extends State<ProductScreen> {
                         borderRadius:
                             const BorderRadius.all(Radius.circular(10)),
                         onTap: () {
-                          cartHelper.insertItem(item['title'], item['price']);
+                          cartHelper.insertItem(
+                              item['title'], item['price'], item['id']);
                         },
                         child: Center(
                           child: Padding(

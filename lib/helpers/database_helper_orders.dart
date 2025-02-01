@@ -22,23 +22,18 @@ class DatabaseHelperOrders {
         category TEXT,
         create_date TEXT,
         time TEXT,
-        price INTEGER
+        price INTEGER,
+        endTime INTEGER
       )
     ''');
   }
 
   // Вставка записи
-  void insertItem(
-    String text,
-    String status,
-    String number,
-    String create_date,
-    String time,
-    double price,
-  ) {
+  void insertItem(String text, String status, String number, String create_date,
+      String time, double price, int endTime) {
     final stmt = db.prepare(
-        'INSERT INTO orders (text, status, number, create_date, time, price) VALUES (?, ?, ?, ?, ?, ?)');
-    stmt.execute([text, status, number, create_date, time, price]);
+        'INSERT INTO orders (text, status, number, create_date, time, price, endTime) VALUES (?, ?, ?, ?, ?, ?, ?)');
+    stmt.execute([text, status, number, create_date, time, price, endTime]);
     stmt.dispose();
   }
 
@@ -54,7 +49,25 @@ class DatabaseHelperOrders {
               'number': row['number'],
               'price': row['price'],
               'create_date': row['create_date'],
-              'time': row['time']
+              'time': row['time'],
+              'endTime': row['endTime']
+            })
+        .toList();
+  }
+
+  // Получение всех записей start
+  List<Map<String, dynamic>> getItemsOld(int time) {
+    final result = db.select('SELECT * FROM orders WHERE endTime == ?', [time]);
+
+    return result
+        .map((row) => {
+              'id': row['id'],
+              'text': row['text'],
+              'number': row['number'],
+              'price': row['price'],
+              'create_date': row['create_date'],
+              'time': row['time'],
+              'endTime': row['endTime']
             })
         .toList();
   }
@@ -79,12 +92,10 @@ class DatabaseHelperOrders {
   }
 
   // Обновление записи
-  void updateItem(
-    int id,
-    String newStatus,
-  ) {
-    final stmt = db.prepare('UPDATE orders SET status = ? WHERE id = ?');
-    stmt.execute([newStatus, id]);
+  void updateItem(int id, String newStatus, int timer) {
+    final stmt =
+        db.prepare('UPDATE orders SET status = ?, endTime = ? WHERE id = ?');
+    stmt.execute([newStatus, timer, id]);
     stmt.dispose();
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:new_app/helpers/database_helper_cart.dart';
 import 'package:intl/intl.dart';
 import 'package:new_app/helpers/database_helper_orders.dart';
+import 'package:new_app/helpers/database_helper_repotrs.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -14,6 +15,7 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreen extends State<OrdersScreen> {
   final DatabaseHelperCart dbHelper = DatabaseHelperCart();
   final DatabaseHelperOrders dbHelperOrders = DatabaseHelperOrders();
+  final DatabaseReportHelper dbHelperReports = DatabaseReportHelper();
   List<Map<String, dynamic>> items = [];
   DateTime now = DateTime.now();
   double totalOrderPrice = 0.0;
@@ -24,6 +26,21 @@ class _OrdersScreen extends State<OrdersScreen> {
   String txtPrint = '';
   String txtPrice = '';
   String txtDade = '';
+  int sale = 0;
+  String txtSale = 'Скидка 0%';
+
+  Future<void> updateID() async {
+    try {
+      items = dbHelper.getItems();
+      var item;
+      for (item in items) {
+        dbHelperReports.updateIdProduct(
+            item['id_product'], item['title'], item['price'], 1);
+      }
+    } catch (e) {
+      print('Ошибка при получении данных: $e');
+    }
+  }
 
   Future<void> fetchAndCalculateTotalOrderPrice() async {
     double calculatedTotalPrice = 0.0;
@@ -48,27 +65,38 @@ class _OrdersScreen extends State<OrdersScreen> {
       }
 
       setState(() {
-        totalOrderPrice = calculatedTotalPrice;
+        totalOrderPrice =
+            calculatedTotalPrice - ((calculatedTotalPrice / 100) * sale);
         textOrder = txt;
         timeNow = DateFormat('kk:mm').format(now);
         dateNow = DateFormat('yyyy-MM-dd').format(now);
         txtPrint = 'Shaurmaster 24/7 \n\n$txt\n';
-        txtPrice = 'Итог: $calculatedTotalPrice сом\n';
+        txtPrice = 'Итог: $totalOrderPrice сом\n';
         txtDade = '$dateNow - $timeNow';
-        counter = count;
+        if (count > 400) {
+          counter = count - 400;
+        } else if (count > 300) {
+          counter = count - 300;
+        } else if (count > 200) {
+          counter = count - 200;
+        } else if (count > 100) {
+          counter = count - 100;
+        } else {
+          counter = count;
+        }
       });
+      print(totalOrderPrice);
     } catch (e) {
       print('Ошибка при получении данных: $e');
     }
   }
 
-  Future<void> printPdf(
-      String txtPrint, String txtPrice, String txtDate, int number) async {
+  Future<void> printPdfToTwoPrinters(String txtPrint, String txtPrice,
+      String txtDate, int number, String txtSale) async {
     final pdf = pw.Document();
     fetchAndCalculateTotalOrderPrice();
-    print(txtPrint);
 
-    // Загрузите шрифт
+    // Загрузите шрифты
     final fontData =
         await rootBundle.load('assets/fonts/RobotoSerif_Black.ttf');
     final ttf = pw.Font.ttf(fontData.buffer.asByteData());
@@ -97,6 +125,13 @@ class _OrdersScreen extends State<OrdersScreen> {
                 ),
               ),
               pw.Text(
+                txtSale,
+                style: pw.TextStyle(
+                  font: ttf,
+                  fontSize: 14,
+                ),
+              ),
+              pw.Text(
                 txtPrice,
                 style: pw.TextStyle(
                   font: ttf,
@@ -116,17 +151,30 @@ class _OrdersScreen extends State<OrdersScreen> {
       ),
     );
 
-    // Печать PDF
-    await Printing.layoutPdf(
-      onLayout: (format) async => pdf.save(),
-    );
+    // Печать PDF на два принтера
+    await Future.wait([
+      Printing.layoutPdf(
+        onLayout: (format) async => pdf.save(),
+      ),
+      Printing.layoutPdf(
+        onLayout: (format) async => pdf.save(),
+      ),
+    ]);
   }
 
   @override
   void initState() {
     super.initState();
     _loadItems();
-    fetchAndCalculateTotalOrderPrice();
+    // Форматируем дату, чтобы получить название дня недели
+    String dayName = DateFormat('EEEE', 'ru_RU').format(now);
+    setState(() {
+      if (dayName == '12') {
+        sale = 10;
+        txtSale = 'Скидка 10%';
+        fetchAndCalculateTotalOrderPrice();
+      }
+    });
   }
 
   void _loadItems() {
@@ -151,10 +199,10 @@ class _OrdersScreen extends State<OrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Алынган товарлар'),
+        title: const Text('Алынган товарлар'),
       ),
       body: Center(
-        child: Container(
+        child: SizedBox(
           width: 500,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -171,7 +219,7 @@ class _OrdersScreen extends State<OrdersScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(item['title']),
-                            Text(item['price'].toString() + ' сом'),
+                            Text('${item['price']} сом'),
                           ],
                         ),
                         trailing: Row(
@@ -214,7 +262,7 @@ class _OrdersScreen extends State<OrdersScreen> {
                   height: 6,
                 ),
                 Center(
-                  child: Container(
+                  child: SizedBox(
                     width: 500,
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -229,15 +277,22 @@ class _OrdersScreen extends State<OrdersScreen> {
                               horizontal: 24, vertical: 12),
                         ),
                         onPressed: () {
+                          int currentTime =
+                              DateTime.now().millisecondsSinceEpoch;
+                          int timerDuration = 900 * 1000;
+                          int endTime = currentTime + timerDuration;
                           fetchAndCalculateTotalOrderPrice();
-                          printPdf(txtPrint, txtPrice, txtDade, counter);
+                          printPdfToTwoPrinters(
+                              txtPrint, txtPrice, txtDade, counter, txtSale);
                           dbHelperOrders.insertItem(
                               textOrder,
                               'start',
                               counter.toString(),
                               dateNow,
                               timeNow,
-                              totalOrderPrice);
+                              totalOrderPrice,
+                              endTime);
+                          updateID();
                           dbHelperOrders.clearProduct();
                           _loadItems();
                         },

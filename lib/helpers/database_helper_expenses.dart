@@ -47,8 +47,7 @@ class DatabaseHelperExpenses {
 
   // Получение всех записей
   List<Map<String, dynamic>> getNowItems() {
-    final result = db
-        .select("SELECT * FROM expense WHERE date(create_date) = date('now')");
+    final result = db.select("SELECT * FROM expense WHERE price = 'new'");
     return result
         .map((row) => {
               'id': row['id'],
@@ -80,11 +79,23 @@ class DatabaseHelperExpenses {
     stmt.dispose();
   }
 
+  // Обновление записи
+  void updateItemStatus(int id, String create_date) {
+    final stmt = db.prepare('UPDATE expense SET price= ? WHERE id = ?');
+    stmt.execute([create_date, id]);
+    stmt.dispose();
+  }
+
   // Удаление записи
   void deleteItem(int id) {
     final stmt = db.prepare('DELETE FROM expense WHERE id = ?');
     stmt.execute([id]);
     stmt.dispose();
+  }
+
+  // Метод для удаления claer
+  void clearOrders() {
+    db.execute('DELETE FROM expense; VACUUM;');
   }
 
   // Закрытие базы данных

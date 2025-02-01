@@ -109,9 +109,10 @@ class _ExpensesAdminScreen extends State<ExpensesAdminScreen> {
           title: Text('Чыгаша'),
         ),
         body: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 400,
+              width: 300,
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(

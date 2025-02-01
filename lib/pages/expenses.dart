@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:new_app/helpers/database_helper_expenses.dart';
 import 'package:intl/intl.dart';
-import 'package:new_app/helpers/database_helper_my_expenses.dart';
 
 class ExpensesScreen extends StatefulWidget {
   @override
@@ -10,11 +9,13 @@ class ExpensesScreen extends StatefulWidget {
 
 class _ExpensesScreen extends State<ExpensesScreen> {
   final DatabaseHelperExpenses dbHelper = DatabaseHelperExpenses();
-  final DatabaseHelperMyExpenses dbExpensesHelper = DatabaseHelperMyExpenses();
   final TextEditingController textController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
+  final TextEditingController textProductController = TextEditingController();
+  final TextEditingController priceProductController = TextEditingController();
+  final TextEditingController countController = TextEditingController();
   List<Map<String, dynamic>> items = [];
-  List<Map<String, dynamic>> myitems = [];
+  List<Map<String, dynamic>> prihod = [];
   DateTime now = DateTime.now();
   String dateNow = '';
   int allprice = 0;
@@ -24,7 +25,7 @@ class _ExpensesScreen extends State<ExpensesScreen> {
     try {
       // ignore: prefer_typing_uninitialized_variables
       var item;
-      for (item in myitems) {
+      for (item in items) {
         calculatedTotalPrice += int.parse(item['create_date']);
       }
 
@@ -40,31 +41,12 @@ class _ExpensesScreen extends State<ExpensesScreen> {
   void initState() {
     super.initState();
     _loadItems();
-    _loadMyItems();
     fetchAndCalculateTotalOrderPrice();
-  }
-
-  void clearTabel() {
-    setState(() {
-      if (allprice > 0) {
-        dbExpensesHelper.clearItem();
-        _loadItems();
-        _loadMyItems();
-        fetchAndCalculateTotalOrderPrice();
-      }
-    });
   }
 
   void _loadItems() {
     setState(() {
-      items = dbHelper.getAllItems();
-      fetchAndCalculateTotalOrderPrice();
-    });
-  }
-
-  void _loadMyItems() {
-    setState(() {
-      myitems = dbExpensesHelper.getAllItems();
+      items = dbHelper.getNowItems();
       fetchAndCalculateTotalOrderPrice();
     });
   }
@@ -73,16 +55,7 @@ class _ExpensesScreen extends State<ExpensesScreen> {
     dbHelper.insertItem(name, dateNow, price);
     _loadItems();
     textController.clear();
-  }
-
-  void _addMyItem(String name, String dateNow, int price) {
-    dbExpensesHelper.insertMyItem(name, dateNow, price);
-    _loadMyItems();
-  }
-
-  void _updateItem(int id, String newName, String create_date, int price) {
-    dbHelper.updateItem(id, newName, create_date, price);
-    _loadItems();
+    priceController.clear();
   }
 
   void _deleteItem(int id) {
@@ -90,15 +63,9 @@ class _ExpensesScreen extends State<ExpensesScreen> {
     _loadItems();
   }
 
-  void _deleteMyItem(int id) {
-    dbExpensesHelper.deleteItem(id);
-    _loadMyItems();
-  }
-
   @override
   void dispose() {
     dbHelper.close();
-    dbExpensesHelper.close();
     super.dispose();
   }
 
@@ -114,6 +81,7 @@ class _ExpensesScreen extends State<ExpensesScreen> {
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
+                Text('Чыгашалар'),
                 TextField(
                   controller: textController,
                   decoration:
@@ -130,7 +98,7 @@ class _ExpensesScreen extends State<ExpensesScreen> {
                     dateNow = DateFormat('yyyy-MM-dd').format(now);
                     int price = int.parse(priceController.text);
                     if (name.isNotEmpty) {
-                      _addItem(name, dateNow, price);
+                      _addItem(name, 'new', price);
                     }
                   },
                   child: Text('Сактоо'),
@@ -162,7 +130,7 @@ class _ExpensesScreen extends State<ExpensesScreen> {
                               Text('${item['create_date']} сом'),
                             ],
                           ),
-                          subtitle: Text('Дата: ${item['price']}'),
+                          subtitle: Text('Статус: ${item['price']}'),
                         ),
                       );
                     },
@@ -174,45 +142,5 @@ class _ExpensesScreen extends State<ExpensesScreen> {
         ),
       ],
     ));
-  }
-
-  void _showUpdateDialog(int id, String currentName, int price) {
-    final updateController = TextEditingController(text: currentName);
-    final updatePriceController = TextEditingController(text: price.toString());
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Чыгашаны өзгөртүү'),
-          content: Column(
-            children: [
-              TextField(
-                controller: updateController,
-                decoration: const InputDecoration(labelText: 'Enter new title'),
-              ),
-              TextField(
-                controller: updatePriceController,
-                decoration: const InputDecoration(labelText: 'Enter new price'),
-              ),
-            ],
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                String newName = updateController.text;
-                dateNow = DateFormat('yyyy-MM-dd').format(now);
-                int price = int.parse(updatePriceController.text);
-                if (newName.isNotEmpty) {
-                  _updateItem(id, newName, dateNow, price);
-                  Navigator.of(context).pop();
-                }
-              },
-              child: Text('Өзгөртүү'),
-            ),
-          ],
-        );
-      },
-    );
   }
 }

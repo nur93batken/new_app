@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:new_app/helpers/database_helper_orders.dart';
 import 'package:intl/intl.dart';
+import 'package:new_app/pages/repotrs.dart';
 
 class OrdersEndScreen extends StatefulWidget {
   @override
@@ -15,37 +16,7 @@ class _OrdersEndScreen extends State<OrdersEndScreen> {
   String timeNow = '';
   double totalOrderPrice = 0.0;
   int counter = 0;
-
-  String determineShift(String time) {
-    // Преобразуем строку времени в объект DateTime для сравнения
-    final timeParts = time.split(':');
-    final hour = int.parse(timeParts[0]);
-    final minute = int.parse(timeParts[1]);
-
-    // Создаем объект DateTime для сравнения
-    final currentTime = DateTime(0, 1, 1, hour, minute);
-
-    // Определяем временные рамки для смен
-    final startOfDayShift = DateTime(0, 1, 1, 8, 0); // 8:00
-    final endOfDayShift = DateTime(0, 1, 1, 20, 0); // 20:00
-    final startOfNightShift = DateTime(0, 1, 1, 20, 0); // 20:00
-    final endOfNightShift = DateTime(0, 1, 1, 8, 0); // 8:00 следующего дня
-    final ofNightShift = DateTime(0, 1, 1, 0, 0); // 0:00 следующего дня
-
-    // Проверяем, в какую смену попадает текущее время
-    if (currentTime.isAfter(startOfDayShift) &&
-        currentTime.isBefore(endOfDayShift)) {
-      return 'Дневная смена';
-    } else if (currentTime.isAfter(startOfNightShift) ||
-        currentTime.isBefore(ofNightShift)) {
-      return 'Ночная смена 1';
-    } else if (currentTime.isAfter(ofNightShift) ||
-        currentTime.isBefore(endOfNightShift)) {
-      return 'Ночная смена 2';
-    } else {
-      return 'Неизвестная смена';
-    }
-  }
+  int old = 0;
 
   Future<void> fetchAndCalculateTotalOrderPrice() async {
     double calculatedTotalPrice = 0.0;
@@ -63,9 +34,12 @@ class _OrdersEndScreen extends State<OrdersEndScreen> {
         count += 1;
       }
 
+      List<Map<String, dynamic>> olders = DatabaseHelperOrders().getItemsOld(0);
+
       setState(() {
         totalOrderPrice = calculatedTotalPrice;
         counter = count;
+        old = olders.length;
       });
     } catch (e) {
       print('Ошибка при получении данных: $e');
@@ -98,6 +72,21 @@ class _OrdersEndScreen extends State<OrdersEndScreen> {
     });
   }
 
+  String _formatRemainingTime(int remainingTime) {
+    if (remainingTime <= 0) return "Время истекло"; // Если время истекло
+
+    Duration duration = Duration(milliseconds: remainingTime);
+
+    // Преобразуем в формат: "минуты:секунды"
+    String minutes = duration.inMinutes.toString();
+    String seconds = (duration.inSeconds % 60)
+        .toString()
+        .padLeft(2, '0'); // Дополняем нулями до двух символов
+    int minutes1 = 15 - int.parse(minutes);
+    int minutes2 = 60 - int.parse(seconds);
+    return "$minutes1 мүнөт : $minutes2 секунд";
+  }
+
   @override
   void dispose() {
     dbHelperOrders.close();
@@ -108,7 +97,7 @@ class _OrdersEndScreen extends State<OrdersEndScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Container(
+        child: SizedBox(
           width: 500,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -128,10 +117,15 @@ class _OrdersEndScreen extends State<OrdersEndScreen> {
                     ),
                     TextButton(
                         onPressed: () {
-                          _clearItems();
-                          _loadItems();
+                          //_clearItems();
+                          //_loadItems();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => ReportsScreen()),
+                          );
                         },
-                        child: const Text('Обнулить')),
+                        child: const Text('Отчет түзүү')),
                   ],
                 ),
                 const SizedBox(
@@ -143,9 +137,7 @@ class _OrdersEndScreen extends State<OrdersEndScreen> {
                     itemBuilder: (context, index) {
                       final item = items[index];
                       return InkWell(
-                        onTap: () {
-                          print(determineShift('21:10'));
-                        },
+                        onTap: () {},
                         child: Padding(
                           padding: const EdgeInsets.only(bottom: 10),
                           child: ListTile(
@@ -181,6 +173,14 @@ class _OrdersEndScreen extends State<OrdersEndScreen> {
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  'Даяр болгон убактысы: ${_formatRemainingTime(item['endTime'])}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red,
                                     fontSize: 12,
                                   ),
                                 ),

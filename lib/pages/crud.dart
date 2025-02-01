@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:new_app/helpers/database_helper.dart';
+import 'package:new_app/pages/admin_expenses.dart';
 import 'package:new_app/pages/expenses_admin.dart';
 
 class ItemScreen extends StatefulWidget {
@@ -62,6 +63,25 @@ class _ItemScreenState extends State<ItemScreen> {
       appBar: AppBar(
         title: Text('Shaurmaster 24/7'),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(
+              right: 0,
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.ad_units,
+                size: 22,
+                color: Colors.blue,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => AdminExpensesScreen()),
+                );
+              },
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(
               right: 0,

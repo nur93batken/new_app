@@ -72,10 +72,9 @@ class DatabaseHelperMyExpenses {
   }
 
   // Обновление записи
-  void updateItem(int id, String newName, String create_date, int price) {
-    final stmt = db.prepare(
-        'UPDATE myexpense SET title = ?, create_date= ?, price = ? WHERE id = ?');
-    stmt.execute([newName, price, create_date, id]);
+  void updateItem(int id, String create_date) {
+    final stmt = db.prepare('UPDATE myexpense SET price = ? WHERE id = ?');
+    stmt.execute([create_date, id]);
     stmt.dispose();
   }
 

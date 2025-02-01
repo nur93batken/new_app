@@ -17,15 +17,17 @@ class DatabaseHelperCart {
       CREATE TABLE IF NOT EXISTS cart (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT,
-        price INTEGER
+        price INTEGER,
+        id_product INTEGER
       )
     ''');
   }
 
   // Вставка записи
-  void insertItem(String title, int price) {
-    final stmt = db.prepare('INSERT INTO cart (title, price) VALUES (?, ?)');
-    stmt.execute([title, price]);
+  void insertItem(String title, int price, int id_product) {
+    final stmt = db.prepare(
+        'INSERT INTO cart (title, price, id_product) VALUES (?, ?, ?)');
+    stmt.execute([title, price, id_product]);
     stmt.dispose();
   }
 
@@ -37,6 +39,7 @@ class DatabaseHelperCart {
               'id': row['id'],
               'title': row['title'],
               'price': row['price'],
+              'id_product': row['id_product'],
             })
         .toList();
   }
